@@ -1,0 +1,7 @@
+build/*
+install/*
+p4-bmv2/*
+p4c-bmv2/*
+switch/*
+*.ts
+*.pcap

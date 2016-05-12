@@ -1,0 +1,4 @@
+install/lib usr/lib
+install/bin usr/bin
+install/share usr/share
+# install/include usr/include
