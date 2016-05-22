@@ -49,10 +49,10 @@ sleep 10
 #echo "Start Routeresync"
 #sudo ./routeresync start > /tmp/routeresync.log 2>&1 &
 #sleep 10
-#
-#echo "Start Fpmsyncd"
-#cd ../fpmsyncd
-#sudo ./fpmsyncd > /tmp/fpmsyncd.log 2>&1 &
-#sleep 5
+
+echo "Start Fpmsyncd"
+cd ../fpmsyncd
+sudo ./fpmsyncd > /tmp/fpmsyncd.log 2>&1 &
+sleep 5
 
 cd /

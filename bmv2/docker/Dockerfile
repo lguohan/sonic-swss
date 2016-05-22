@@ -94,12 +94,12 @@ RUN apt-get install -y                  \
 
 RUN apt-get clean
 RUN apt-get install -y                  \
-    quagga                              \
     redis-sentinel                       \
     redis-server                         \
     redis-tools                          \
     rsyslog                          \
     sudo                                 \
+    tcpdump                               \
     thrift-compiler                      \
     vim
 
@@ -139,6 +139,11 @@ RUN mkdir install_tmp ; \
     cmake --build . --target install ; \
     cd ../.. ; \
     cd ..
+
+ADD quagga_0.99.24.1-2_amd64.deb /quagga_0.99.24.1-2_amd64.deb
+ADD quagga-dbg_0.99.24.1-2_amd64.deb /quagga-dbg_0.99.24.1-2_amd64.deb
+RUN dpkg -i quagga_0.99.24.1-2_amd64.deb
+RUN dpkg -i quagga-dbg_0.99.24.1-2_amd64.deb
 
 RUN git clone https://github.com/krambn/SAI.git
 RUN git clone https://github.com/krambn/sonic-sairedis.git
