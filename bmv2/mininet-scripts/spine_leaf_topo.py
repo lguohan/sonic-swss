@@ -117,11 +117,6 @@ def main():
     net.start()
 
     # hosts configuration - ipv4
-    h1.setARP( ip = '172.16.101.1', mac = '00:01:04:06:08:03' )
-    h2.setARP( ip = '172.18.101.1', mac = '00:01:04:06:08:03' )
-    h3.setARP( ip = '172.16.102.1', mac = '00:01:04:06:08:03' )
-    h4.setARP( ip = '172.18.102.1', mac = '00:01:04:06:08:03' )
-
     h1.setDefaultRoute( 'via 172.16.101.1' )
     h2.setDefaultRoute( 'via 172.18.101.1' )
     h3.setDefaultRoute( 'via 172.16.102.1' )
