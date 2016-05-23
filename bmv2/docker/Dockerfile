@@ -101,6 +101,7 @@ RUN apt-get install -y                  \
     sudo                                 \
     tcpdump                               \
     thrift-compiler                      \
+    unzip                                \
     vim
 
 RUN pip install --upgrade thrift
@@ -138,12 +139,12 @@ RUN mkdir install_tmp ; \
     ctest . ; \
     cmake --build . --target install ; \
     cd ../.. ; \
+    wget https://sonic-jenkins.westus.cloudapp.azure.com/job/quagga-build/lastSuccessfulBuild/artifact/target/*zip*/target.zip ; \
+    unzip target.zip ; \
+    cd target ; \
+    dpkg -i *.deb ; \
+    cd .. ; \
     cd ..
-
-ADD quagga_0.99.24.1-2_amd64.deb /quagga_0.99.24.1-2_amd64.deb
-ADD quagga-dbg_0.99.24.1-2_amd64.deb /quagga-dbg_0.99.24.1-2_amd64.deb
-RUN dpkg -i quagga_0.99.24.1-2_amd64.deb
-RUN dpkg -i quagga-dbg_0.99.24.1-2_amd64.deb
 
 RUN git clone https://github.com/krambn/SAI.git
 RUN git clone https://github.com/krambn/sonic-sairedis.git
