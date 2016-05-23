@@ -1,7 +1,5 @@
 #!/bin/bash
 
-stty -echo; set +m
-
 ip tuntap add dev Ethernet0 mode tap
 ip tuntap add dev Ethernet1 mode tap
 ip link set Ethernet0 up

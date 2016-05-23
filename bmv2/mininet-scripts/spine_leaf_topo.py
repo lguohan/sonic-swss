@@ -18,7 +18,7 @@
 # Topology with two spine two leaf switches and four hosts with BGP
 #
 #             sw1                            sw2
-#   172.16.10.2 | 172.16.20.2     172.17.10.2 | 172.17.20.2
+#   172.16.10.2 | 172.16.20.2     172.18.10.2 | 172.18.20.2
 #      |                \             /             |
 #      |                 \           /              |
 #      |                  \         /               |
@@ -32,12 +32,12 @@
 #      |                   /       \                |
 #      |                  /         \               |
 #      |                 /           \              |
-#  172.16.10.1 | 172.17.10.1       172.16.20.1 | 172.17.20.1
+#  172.16.10.1 | 172.18.10.1       172.16.20.1 | 172.18.20.1
 #             sw3                            sw4
-#  172.16.101.1 | 172.17.101.1     172.16.102.1 | 172.17.102.1
+#  172.16.101.1 | 172.18.101.1     172.16.102.1 | 172.18.102.1
 #      |                |                |              |
 #      h1               h2               h3             h4
-#  172.16.101.5   172.17.101.5     172.16.102.5   172.17.102.5
+#  172.16.101.5   172.18.101.5     172.16.102.5   172.18.102.5
 #
 ##############################################################################
 
@@ -54,9 +54,9 @@ def main():
 
     # add hosts
     h1 = net.addHost( 'h1', ip = '172.16.101.5/24', mac = '00:04:00:00:00:02' )
-    h2 = net.addHost( 'h2', ip = '172.17.101.5/24', mac = '00:04:00:00:00:03' )
+    h2 = net.addHost( 'h2', ip = '172.18.101.5/24', mac = '00:04:00:00:00:03' )
     h3 = net.addHost( 'h3', ip = '172.16.102.5/24', mac = '00:05:00:00:00:02' )
-    h4 = net.addHost( 'h4', ip = '172.17.102.5/24', mac = '00:05:00:00:00:03' )
+    h4 = net.addHost( 'h4', ip = '172.18.102.5/24', mac = '00:05:00:00:00:03' )
 
     # add switch 1 - spine 1
     sw1 = net.addSwitch( 'sw1', target_name = "p4sonicswitch",
@@ -99,24 +99,28 @@ def main():
         net.addLink( sw2, sw4, port1 = 2, port2 = 4 , fast=False )
 
     sw1.cpFile('run_bm_sw1.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw1.execProgram("/configs/startup_config.sh")
     sw1.execProgram("/scripts/startup.sh")
 
     sw2.cpFile('run_bm_sw2.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw2.execProgram("/configs/startup_config.sh")
     sw2.execProgram("/scripts/startup.sh")
 
     sw3.cpFile('run_bm_sw3.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw3.execProgram("/configs/startup_config.sh")
     sw3.execProgram("/scripts/startup.sh")
 
     sw4.cpFile('run_bm_sw4.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw4.execProgram("/configs/startup_config.sh")
     sw4.execProgram("/scripts/startup.sh")
 
     net.start()
 
     # hosts configuration - ipv4
     h1.setDefaultRoute( 'via 172.16.101.1' )
-    h2.setDefaultRoute( 'via 172.17.101.1' )
+    h2.setDefaultRoute( 'via 172.18.101.1' )
     h3.setDefaultRoute( 'via 172.16.102.1' )
-    h4.setDefaultRoute( 'via 172.17.102.1' )
+    h4.setDefaultRoute( 'via 172.18.102.1' )
 
     sw1.cmd( 'service quagga start')
     sw2.cmd( 'service quagga start')
