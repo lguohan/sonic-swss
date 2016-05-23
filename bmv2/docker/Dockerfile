@@ -10,7 +10,6 @@ RUN mkdir /root/.ssh/
 
 ADD id_rsa /root/.ssh/id_rsa
 ADD id_rsa.pub /root/.ssh/id_rsa.pub
-ADD authorized_keys /root/.ssh/authorized_keys
 ADD known_hosts /root/.ssh/known_hosts
 
 RUN mkdir /scripts
