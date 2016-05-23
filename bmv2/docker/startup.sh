@@ -15,7 +15,7 @@ sudo rsyslogd &
 echo "Start BMV2"
 cd ../../install/bin
 ../../run_bm.sh > /tmp/run_bm.log 2>&1 &
-sleep 20
+sleep 15
 
 echo "Start redis server"
 redis-server > /tmp/redis-server.log 2>&1 &
@@ -34,17 +34,14 @@ sleep 10
 echo "Start Portsyncd"
 cd ../portsyncd
 sudo ./portsyncd -f port_config.ini > /tmp/portsyncd.log 2>&1 &
-sleep 5
 
 echo "Start Intfsync"
 cd ../intfsyncd
 sudo ./intfsyncd > /tmp/intfsyncd.log 2>&1 &
-sleep 5
 
 echo "Start Neighsyncd"
 cd ../neighsyncd
 sudo ./neighsyncd > /tmp/neighsyncd.log 2>&1 &
-sleep 10
 
 #echo "Start Routeresync"
 #sudo ./routeresync start > /tmp/routeresync.log 2>&1 &
@@ -53,6 +50,5 @@ sleep 10
 echo "Start Fpmsyncd"
 cd ../fpmsyncd
 sudo ./fpmsyncd > /tmp/fpmsyncd.log 2>&1 &
-sleep 5
 
 cd /
