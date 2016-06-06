@@ -49,7 +49,7 @@ from p4_mininet import P4DockerSwitch
 from time import sleep
 import sys
 
-def main():
+def main(cli=0):
     net = Mininet( controller = None )
 
     # add hosts
@@ -127,13 +127,12 @@ def main():
     sw3.cmd( 'service quagga start')
     sw4.cmd( 'service quagga start')
 
-    CLI( net )
-    """
     result = 0
 
     if cli:
+        CLI(net)
     else:
-        sleep(60)
+        sleep(90)
 
         node_values = net.values()
         print node_values
@@ -150,15 +149,6 @@ def main():
         else:
             print "PING SUCCESSFUL!!!"
 
-        if ipv6:
-            print "PING6 BETWEEN THE HOSTS"
-            result = net.ping6(hosts, 30)
-
-            if result != 0:
-                print "PING6 FAILED BETWEEN HOSTS %s" % (hosts)
-            else:
-                print "PING6 SUCCESSFUL!!!"
-
         # print host arp table & routes
         for host in hosts:
             print "ARP ENTRIES ON HOST"
@@ -169,10 +159,13 @@ def main():
             intfList = host.intfNames()
             print intfList
 
-    return result
-    """
     net.stop()
+    return result
 
 if __name__ == '__main__':
+    args = sys.argv
     setLogLevel( 'info' )
-    main()
+    cli = 0
+    if "--cli" in args:
+        cli = 1
+    main(cli)
