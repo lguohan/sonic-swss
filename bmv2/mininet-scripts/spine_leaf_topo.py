@@ -99,19 +99,19 @@ def main(cli=0):
         net.addLink( sw2, sw4, port1 = 2, port2 = 4 , fast=False )
 
     sw1.cpFile('run_bm_sw1.sh', '/sonic-swss/bmv2/run_bm.sh')
-    sw1.execProgram("/scripts/startup.sh -m 00:00:01:00:00:01")
+    sw1.execProgram('/scripts/startup.sh', args='-m  00:00:01:00:00:01')
     sw1.execProgram("/configs/startup_config.sh")
 
     sw2.cpFile('run_bm_sw2.sh', '/sonic-swss/bmv2/run_bm.sh')
-    sw2.execProgram("/scripts/startup.sh -m 00:00:01:00:00:02")
+    sw2.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:02')
     sw2.execProgram("/configs/startup_config.sh")
 
     sw3.cpFile('run_bm_sw3.sh', '/sonic-swss/bmv2/run_bm.sh')
-    sw3.execProgram("/scripts/startup.sh -m 00:00:01:00:00:03")
+    sw3.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:03')
     sw3.execProgram("/configs/startup_config.sh")
 
     sw4.cpFile('run_bm_sw4.sh', '/sonic-swss/bmv2/run_bm.sh')
-    sw4.execProgram("/scripts/startup.sh -m 00:00:01:00:00:04")
+    sw4.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:04')
     sw4.execProgram("/configs/startup_config.sh")
 
     net.start()
