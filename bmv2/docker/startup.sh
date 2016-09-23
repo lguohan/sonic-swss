@@ -21,26 +21,21 @@ echo "Start redis server"
 redis-server > /tmp/redis-server.log 2>&1 &
 sleep 10
 
-echo "Start Syncd"
-cd /sonic-sairedis/syncd
-sudo LD_LIBRARY_PATH=/sonic-swss/bmv2/install/lib:$LD_LIBRARY_PATH ./syncd > /tmp/syncd.log 2>&1  &
-sleep 10
-
 echo "Start Orchagent"
 cd /sonic-swss/orchagent
-sudo LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./orchagent > /tmp/orchagent.log 2>&1 &
+sudo LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./orchagent $* > /tmp/orchagent.log 2>&1 &
 sleep 10
 
 echo "Start Portsyncd"
-cd ../portsyncd
+cd /sonic-swss/portsyncd
 sudo ./portsyncd -f port_config.ini > /tmp/portsyncd.log 2>&1 &
 
 echo "Start Intfsync"
-cd ../intfsyncd
+cd /sonic-swss/intfsyncd
 sudo ./intfsyncd > /tmp/intfsyncd.log 2>&1 &
 
 echo "Start Neighsyncd"
-cd ../neighsyncd
+cd /sonic-swss/neighsyncd
 sudo ./neighsyncd > /tmp/neighsyncd.log 2>&1 &
 
 #echo "Start Routeresync"
@@ -48,7 +43,12 @@ sudo ./neighsyncd > /tmp/neighsyncd.log 2>&1 &
 #sleep 10
 
 echo "Start Fpmsyncd"
-cd ../fpmsyncd
+cd /sonic-swss/fpmsyncd
 sudo ./fpmsyncd > /tmp/fpmsyncd.log 2>&1 &
+
+echo "Start Syncd"
+cd /sonic-sairedis/syncd
+sudo LD_LIBRARY_PATH=/sonic-swss/bmv2/install/lib:$LD_LIBRARY_PATH ./syncd > /tmp/syncd.log 2>&1  &
+sleep 10
 
 cd /
