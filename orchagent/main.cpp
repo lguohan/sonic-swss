@@ -157,6 +157,7 @@ int main(int argc, char **argv)
 
     sai_attribute_t attr;
     attr.id = SAI_SWITCH_ATTR_SRC_MAC_ADDRESS;
+    /*
     status = sai_switch_api->get_switch_attribute(1, &attr);
     if (status != SAI_STATUS_SUCCESS)
     {
@@ -168,8 +169,9 @@ int main(int argc, char **argv)
     }
 
     if (status != SAI_STATUS_SUCCESS || !gMacAddress)
+    */
     {
-        gMacAddress = MacAddress(DEFAULT_MAC);
+//        gMacAddress = MacAddress(DEFAULT_MAC);
 
         memcpy(attr.value.mac, gMacAddress.getMac(), 6);
         status = sai_switch_api->set_switch_attribute(&attr);
