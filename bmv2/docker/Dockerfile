@@ -44,7 +44,7 @@ RUN apt-get install -y                  \
     libboost-program-options-dev         \
     libboost-system-dev                  \
     libboost-test-dev                    \
-    libboost-thread-dev
+    libboost-thread1.58-dev
 
 RUN apt-get clean
 RUN apt-get install -y                  \
