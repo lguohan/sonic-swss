@@ -59,22 +59,22 @@ def main(cli=0):
     h4 = net.addHost( 'h4', ip = '172.18.102.5/24', mac = '00:05:00:00:00:03' )
 
     # add switch 1 - spine 1
-    sw1 = net.addSwitch( 'sw1', target_name = "p4sonicswitch",
+    sw1 = net.addSwitch( 'sw1', target_name = "docker-sonic-p4",
             cls = P4DockerSwitch, config_fs = 'configs/sw1/l3_bgp',
             pcap_dump = True, start_program='/bin/bash')
 
     # add switch 2 - spine 2
-    sw2 = net.addSwitch( 'sw2', target_name = "p4sonicswitch",
+    sw2 = net.addSwitch( 'sw2', target_name = "docker-sonic-p4",
             cls = P4DockerSwitch, config_fs = 'configs/sw2/l3_bgp',
             pcap_dump = True, start_program='/bin/bash')
 
     # add switch 3 - leaf 1
-    sw3 = net.addSwitch( 'sw3', target_name = "p4sonicswitch",
+    sw3 = net.addSwitch( 'sw3', target_name = "docker-sonic-p4",
             cls = P4DockerSwitch, config_fs = 'configs/sw3/l3_bgp',
             pcap_dump = True, start_program='/bin/bash')
 
     # add switch 4 - leaf 2
-    sw4 = net.addSwitch( 'sw4', target_name = "p4sonicswitch",
+    sw4 = net.addSwitch( 'sw4', target_name = "docker-sonic-p4",
             cls = P4DockerSwitch, config_fs = 'configs/sw4/l3_bgp',
             pcap_dump = True, start_program='/bin/bash')
 
@@ -98,19 +98,19 @@ def main(cli=0):
         net.addLink( sw1, sw4, port1 = 2, port2 = 3 , fast=False )
         net.addLink( sw2, sw4, port1 = 2, port2 = 4 , fast=False )
 
-    sw1.cpFile('run_bm_sw1.sh', '/sonic-swss/bmv2/run_bm.sh')
-    sw1.execProgram('/scripts/startup.sh', args='-m  00:00:01:00:00:01')
+    sw1.cpFile('run_bm_sw1.sh', '/run_bm.sh')
+    sw1.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:01')
     sw1.execProgram("/configs/startup_config.sh")
 
-    sw2.cpFile('run_bm_sw2.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw2.cpFile('run_bm_sw2.sh', '/run_bm.sh')
     sw2.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:02')
     sw2.execProgram("/configs/startup_config.sh")
 
-    sw3.cpFile('run_bm_sw3.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw3.cpFile('run_bm_sw3.sh', '/run_bm.sh')
     sw3.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:03')
     sw3.execProgram("/configs/startup_config.sh")
 
-    sw4.cpFile('run_bm_sw4.sh', '/sonic-swss/bmv2/run_bm.sh')
+    sw4.cpFile('run_bm_sw4.sh', '/run_bm.sh')
     sw4.execProgram('/scripts/startup.sh', args='-m 00:00:01:00:00:04')
     sw4.execProgram("/configs/startup_config.sh")
 
