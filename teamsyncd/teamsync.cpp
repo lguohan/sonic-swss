@@ -18,7 +18,8 @@ using namespace swss;
 
 TeamSync::TeamSync(DBConnector *db, Select *select) :
     m_select(select),
-    m_lagTable(db, APP_LAG_TABLE_NAME)
+    m_lagTable(db, APP_LAG_TABLE_NAME),
+    m_lagMemberTable(db, APP_LAG_MEMBER_TABLE_NAME)
 {
 }
 
@@ -60,20 +61,25 @@ void TeamSync::addLag(const string &lagName, int ifindex, bool admin_state,
     fvVector.push_back(m);
     m_lagTable.set(lagName, fvVector);
 
+    SWSS_LOG_INFO("Add %s admin_status:%s oper_status:%s mtu:%d",
+                   lagName.c_str(), admin_state ? "up" : "down", oper_state ? "up" : "down", mtu);
+
     /* Return when the team instance has already been tracked */
     if (m_teamPorts.find(lagName) != m_teamPorts.end())
         return;
 
     /* Start track the team instance */
-    TeamPortSync *sync = new TeamPortSync(lagName, ifindex, &m_lagTable);
-    m_select->addSelectable(sync);
-    m_teamPorts[lagName] = shared_ptr<TeamPortSync>(sync);
+    auto sync = make_shared<TeamPortSync>(lagName, ifindex, &m_lagMemberTable);
+    m_select->addSelectable(sync.get());
+    m_teamPorts[lagName] = sync;
 }
 
 void TeamSync::removeLag(const string &lagName)
 {
     /* Delete the LAG */
     m_lagTable.del(lagName);
+
+    SWSS_LOG_INFO("Remove %s", lagName.c_str());
 
     /* Return when the team instance hasn't been tracked before */
     if (m_teamPorts.find(lagName) == m_teamPorts.end())
@@ -90,8 +96,8 @@ const struct team_change_handler TeamSync::TeamPortSync::gPortChangeHandler = {
 };
 
 TeamSync::TeamPortSync::TeamPortSync(const string &lagName, int ifindex,
-                                     ProducerStateTable *lagTable) :
-    m_lagTable(lagTable),
+                                     ProducerStateTable *lagMemberTable) :
+    m_lagMemberTable(lagMemberTable),
     m_lagName(lagName),
     m_ifindex(ifindex)
 {
@@ -166,7 +172,7 @@ int TeamSync::TeamPortSync::onChange()
             vector<FieldValueTuple> v;
             FieldValueTuple l("status", it.second ? "enabled" : "disabled");
             v.push_back(l);
-            m_lagTable->set(key, v);
+            m_lagMemberTable->set(key, v);
         }
     }
 
@@ -175,7 +181,7 @@ int TeamSync::TeamPortSync::onChange()
         if (tmp_lag_members.find(it.first) == tmp_lag_members.end())
         {
             string key = m_lagName + ":" + it.first;
-            m_lagTable->del(key);
+            m_lagMemberTable->del(key);
         }
     }
 

@@ -33,9 +33,10 @@ extern bool g_init;
 LinkSync::LinkSync(DBConnector *db) :
     m_portTableProducer(db, APP_PORT_TABLE_NAME),
     m_vlanTableProducer(db, APP_VLAN_TABLE_NAME),
+    m_vlanMemberTableProducer(db, APP_VLAN_MEMBER_TABLE_NAME),
     m_lagTableProducer(db, APP_LAG_TABLE_NAME),
     m_portTableConsumer(db, APP_PORT_TABLE_NAME),
-    m_vlanTableConsumer(db, APP_VLAN_TABLE_NAME),
+    m_vlanMemberTableConsumer(db, APP_VLAN_MEMBER_TABLE_NAME),
     m_lagTableConsumer(db, APP_LAG_TABLE_NAME)
 {
     /* See the comments for g_portSet in portsyncd.cpp */
@@ -56,16 +57,11 @@ LinkSync::LinkSync(DBConnector *db) :
     }
 
     vector<KeyOpFieldsValuesTuple> tuples;
-    m_vlanTableConsumer.getTableContent(tuples);
+    m_vlanMemberTableConsumer.getTableContent(tuples);
 
     for (auto tuple : tuples)
     {
         vector<string> keys = tokenize(kfvKey(tuple), ':');
-        if (keys.size() != 2)
-        {
-            continue;
-        }
-
         string vlan = keys[0];
         string member = keys[1];
 
@@ -108,12 +104,12 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
 
     if (type)
     {
-        SWSS_LOG_DEBUG("nlmsg type:%d key:%s admin:%d oper:%d addr:%s ifindex:%d master:%d type:%s",
+        SWSS_LOG_INFO("nlmsg type:%d key:%s admin:%d oper:%d addr:%s ifindex:%d master:%d type:%s",
                        nlmsg_type, key.c_str(), admin, oper, addrStr, ifindex, master, type);
     }
     else
     {
-        SWSS_LOG_DEBUG("nlmsg type:%d key:%s admin:%d oper:%d addr:%s ifindex:%d master:%d",
+        SWSS_LOG_INFO("nlmsg type:%d key:%s admin:%d oper:%d addr:%s ifindex:%d master:%d",
                        nlmsg_type, key.c_str(), admin, oper, addrStr, ifindex, master);
     }
 
@@ -137,7 +133,7 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
 
             if (nlmsg_type == RTM_DELLINK) /* Will it happen? */
             {
-                m_vlanTableProducer.del(member_key);
+                m_vlanMemberTableProducer.del(member_key);
             }
             else /* RTM_NEWLINK */
             {
@@ -145,7 +141,7 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
                 FieldValueTuple t("tagging_mode", "untagged");
                 fvVector.push_back(t);
 
-                m_vlanTableProducer.set(member_key, fvVector);
+                m_vlanMemberTableProducer.set(member_key, fvVector);
             }
         }
     }
@@ -158,17 +154,15 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
             if (member_set.find(key) != member_set.end())
             {
                 string member_key = (*i).first + ":" + key;
-                m_vlanTableProducer.del(member_key);
+                m_vlanMemberTableProducer.del(member_key);
             }
         }
     }
 
     vector<FieldValueTuple> fvVector;
     FieldValueTuple a("admin_status", admin ? "up" : "down");
-    FieldValueTuple o("oper_status", oper ? "up" : "down");
     FieldValueTuple m("mtu", to_string(mtu));
     fvVector.push_back(a);
-    fvVector.push_back(o);
     fvVector.push_back(m);
 
     /* VLAN interfaces: Check if the type is bridge */
@@ -180,6 +174,8 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
         }
         else
         {
+            FieldValueTuple o("oper_status", oper ? "up" : "down");
+            fvVector.push_back(o);
             m_vlanTableProducer.set(key, fvVector);
         }
         return;

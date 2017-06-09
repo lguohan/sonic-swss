@@ -7,6 +7,7 @@ extern "C" {
 
 #include <set>
 #include <string>
+#include <vector>
 
 #define DEFAULT_PORT_VLAN_ID    1
 
@@ -31,7 +32,7 @@ public:
 
     inline bool operator<(const Port &o) const
     {
-        return m_alias< o.m_alias;
+        return m_alias < o.m_alias;
     }
 
     inline bool operator==(const Port &o) const
@@ -43,6 +44,10 @@ public:
     {
         return !(*this == o);
     }
+
+    // Output parameter:
+    //   group_member_oid   - the newly created group member OID for the table in a table group
+    sai_status_t bindAclTable(sai_object_id_t& group_member_oid, sai_object_id_t table_oid);
 
     std::string         m_alias;
     Type                m_type;
@@ -56,7 +61,8 @@ public:
     sai_object_id_t     m_hif_id = 0;
     sai_object_id_t     m_lag_id = 0;
     sai_object_id_t     m_lag_member_id = 0;
-    std::set<std::string> m_members = set<std::string>();
+    sai_object_id_t     m_acl_table_group_id = 0;
+    std::set<std::string> m_members;
     std::vector<sai_object_id_t> m_queue_ids;
     std::vector<sai_object_id_t> m_priority_group_ids;
 };

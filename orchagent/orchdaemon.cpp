@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include "orchdaemon.h"
 #include "logger.h"
+
+#define SAI_SWITCH_ATTR_CUSTOM_RANGE_BASE SAI_SWITCH_ATTR_CUSTOM_RANGE_START
 #include "sairedis.h"
 
 using namespace std;
@@ -10,6 +12,7 @@ using namespace swss;
 #define SELECT_TIMEOUT 1000
 
 extern sai_switch_api_t*           sai_switch_api;
+extern sai_object_id_t             gSwitchId;
 
 /* Global variable gPortsOrch declared */
 PortsOrch *gPortsOrch;
@@ -36,11 +39,13 @@ bool OrchDaemon::init()
     vector<string> ports_tables = {
         APP_PORT_TABLE_NAME,
         APP_VLAN_TABLE_NAME,
-        APP_LAG_TABLE_NAME
+        APP_VLAN_MEMBER_TABLE_NAME,
+        APP_LAG_TABLE_NAME,
+        APP_LAG_MEMBER_TABLE_NAME
     };
 
     gPortsOrch = new PortsOrch(m_applDb, ports_tables);
-    gFdbOrch = new FdbOrch(gPortsOrch);
+    gFdbOrch = new FdbOrch(m_applDb, APP_FDB_TABLE_NAME, gPortsOrch);
     IntfsOrch *intfs_orch = new IntfsOrch(m_applDb, APP_INTF_TABLE_NAME);
     NeighOrch *neigh_orch = new NeighOrch(m_applDb, APP_NEIGH_TABLE_NAME, intfs_orch);
     RouteOrch *route_orch = new RouteOrch(m_applDb, APP_ROUTE_TABLE_NAME, neigh_orch);
@@ -78,7 +83,7 @@ bool OrchDaemon::init()
     };
     AclOrch *acl_orch = new AclOrch(m_applDb, acl_tables, gPortsOrch, mirror_orch);
 
-    m_orchList = { gPortsOrch, intfs_orch, neigh_orch, route_orch, copp_orch, tunnel_decap_orch, qos_orch, buffer_orch, mirror_orch, acl_orch};
+    m_orchList = { gPortsOrch, intfs_orch, neigh_orch, route_orch, copp_orch, tunnel_decap_orch, qos_orch, buffer_orch, mirror_orch, acl_orch, gFdbOrch};
     m_select = new Select();
 
     return true;
@@ -91,7 +96,7 @@ void OrchDaemon::flush()
 
     sai_attribute_t attr;
     attr.id = SAI_REDIS_SWITCH_ATTR_FLUSH;
-    sai_status_t status = sai_switch_api->set_switch_attribute(&attr);
+    sai_status_t status = sai_switch_api->set_switch_attribute(gSwitchId, &attr);
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to flush redis pipeline %d", status);
@@ -123,11 +128,6 @@ void OrchDaemon::start()
 
         if (ret == Select::TIMEOUT)
         {
-            /* After every TIMEOUT, periodically check all m_toSync map to
-             * execute all the remaining tasks that need to be retried. */
-            for (Orch *o : m_orchList)
-                o->doTask();
-
             /* Let sairedis to flush all SAI function call to ASIC DB.
              * Normally the redis pipeline will flush when enough request
              * accumulated. Still it is possible that small amount of
@@ -139,6 +139,14 @@ void OrchDaemon::start()
 
         Orch *o = getOrchByConsumer((ConsumerStateTable *)s);
         o->execute(((ConsumerStateTable *)s)->getTableName());
+
+        /* After each iteration, periodically check all m_toSync map to
+         * execute all the remaining tasks that need to be retried. */
+
+        /* TODO: Abstract Orch class to have a specific todo list */
+        for (Orch *o : m_orchList)
+            o->doTask();
+
     }
 }
 

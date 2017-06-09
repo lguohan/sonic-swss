@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <tuple>
+#include <map>
 #include <condition_variable>
 #include "orch.h"
 #include "portsorch.h"
@@ -95,6 +96,31 @@ private:
     static map<acl_range_properties_t, AclRange*> m_ranges;
 };
 
+struct AclRuleCounters
+{
+    uint64_t packets;
+    uint64_t bytes;
+
+    AclRuleCounters(uint64_t p = 0, uint64_t b = 0) :
+        packets(p),
+        bytes(b)
+    {
+    }
+
+    AclRuleCounters(const AclRuleCounters& rhs) :
+        packets(rhs.packets),
+        bytes(rhs.bytes)
+    {
+    }
+
+    AclRuleCounters& operator +=(const AclRuleCounters& rhs)
+    {
+        packets += rhs.packets;
+        bytes += rhs.bytes;
+        return *this;
+    }
+};
+
 class AclRule
 {
 public:
@@ -113,6 +139,7 @@ public:
     virtual bool create();
     virtual bool remove();
     virtual void update(SubjectType, void *) = 0;
+    virtual AclRuleCounters getCounters();
 
     string getId()
     {
@@ -170,10 +197,12 @@ public:
     bool create();
     bool remove();
     void update(SubjectType, void *);
+    AclRuleCounters getCounters();
 
 protected:
     bool m_state;
     string m_sessionName;
+    AclRuleCounters counters;
     MirrorOrch *m_pMirrorOrch;
 };
 
@@ -200,7 +229,7 @@ inline void split(string str, Iterable& out, char delim = ' ')
     }
 }
 
-class AclOrch : public Orch, public Observer, public thread
+class AclOrch : public Orch, public Observer
 {
 public:
     AclOrch(DBConnector *db, vector<string> tableNames, PortsOrch *portOrch, MirrorOrch *mirrorOrch);
@@ -208,11 +237,6 @@ public:
     void update(SubjectType, void *);
 
     sai_object_id_t getTableById(string table_id);
-
-    static mutex& getContextMutex()
-    {
-        return m_countersMutex;
-    }
 
     static swss::Table& getCountersTable()
     {
@@ -236,8 +260,8 @@ private:
 
     //vector <AclTable> m_AclTables;
     map <sai_object_id_t, AclTable> m_AclTables;
-    // Port OID to vector of ACL OIDs
-    map <sai_object_id_t, vector<sai_object_id_t>> m_portBind;
+    // ACL table OID to multiple ACL table group member
+    multimap <sai_object_id_t, sai_object_id_t> m_AclTableGroupMembers;
 
     static mutex m_countersMutex;
     static condition_variable m_sleepGuard;
@@ -247,6 +271,8 @@ private:
 
     PortsOrch *m_portOrch;
     MirrorOrch *m_mirrorOrch;
+
+    thread m_countersThread;
 };
 
 #endif /* SWSS_ACLORCH_H */

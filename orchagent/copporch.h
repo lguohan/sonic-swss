@@ -23,7 +23,7 @@ const string copp_policer_action_yellow_field = "yellow_action";
 /* TrapGroupPolicerTable: trap group ID, policer ID */
 typedef map<sai_object_id_t, sai_object_id_t> TrapGroupPolicerTable;
 /* TrapIdTrapGroupTable: trap ID, trap group ID */
-typedef map<sai_hostif_trap_id_t, sai_object_id_t> TrapIdTrapGroupTable;
+typedef map<sai_hostif_trap_type_t, sai_object_id_t> TrapIdTrapGroupTable, TrapTypeMap;
 
 class CoppOrch : public Orch
 {
@@ -31,18 +31,20 @@ public:
     CoppOrch(DBConnector *db, string tableName);
 protected:
     object_map m_trap_group_map;
+    TrapTypeMap m_trap_type_map;
 
     TrapGroupPolicerTable m_trap_group_policer_map;
     TrapIdTrapGroupTable m_syncdTrapIds;
 
+    void initDefaultHostTable();
     void initDefaultTrapGroup();
     void initDefaultTrapIds();
 
     task_process_status processCoppRule(Consumer& consumer);
     bool isValidList(vector<string> &trap_id_list, vector<string> &all_items) const;
-    void getTrapIdList(vector<string> &trap_id_name_list, vector<sai_hostif_trap_id_t> &trap_id_list) const;
+    void getTrapIdList(vector<string> &trap_id_name_list, vector<sai_hostif_trap_type_t> &trap_id_list) const;
     bool applyTrapIds(sai_object_id_t trap_group, vector<string> &trap_id_name_list, vector<sai_attribute_t> &trap_id_attribs);
-    bool applyAttributesToTrapIds(sai_object_id_t trap_group_id, const vector<sai_hostif_trap_id_t> &trap_id_list, vector<sai_attribute_t> &trap_id_attribs);
+    bool applyAttributesToTrapIds(sai_object_id_t trap_group_id, const vector<sai_hostif_trap_type_t> &trap_id_list, vector<sai_attribute_t> &trap_id_attribs);
 
     bool createPolicer(string trap_group, vector<sai_attribute_t> &policer_attribs);
     bool removePolicer(string trap_group_name);

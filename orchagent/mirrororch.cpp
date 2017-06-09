@@ -26,6 +26,7 @@
 #define MIRROR_SESSION_DSCP_MAX         63
 
 extern sai_mirror_api_t *sai_mirror_api;
+extern sai_object_id_t gSwitchId;
 
 using namespace std::rel_ops;
 
@@ -392,7 +393,7 @@ bool MirrorOrch::activateSession(const string& name, MirrorEntry& session)
     attrs.push_back(attr);
 
     attr.id = SAI_MIRROR_SESSION_ATTR_TYPE;
-    attr.value.s32 = SAI_MIRROR_TYPE_ENHANCED_REMOTE;
+    attr.value.s32 = SAI_MIRROR_SESSION_TYPE_ENHANCED_REMOTE;
     attrs.push_back(attr);
 
     attr.id =SAI_MIRROR_SESSION_ATTR_VLAN_TPID;
@@ -411,8 +412,8 @@ bool MirrorOrch::activateSession(const string& name, MirrorEntry& session)
     attr.value.u8 = MIRROR_SESSION_DEFAULT_VLAN_CFI;
     attrs.push_back(attr);
 
-    attr.id =SAI_MIRROR_SESSION_ATTR_ENCAP_TYPE;
-    attr.value.s32 = SAI_MIRROR_L3_GRE_TUNNEL;
+    attr.id = SAI_MIRROR_SESSION_ATTR_ERSPAN_ENCAPSULATION_TYPE;
+    attr.value.s32 = SAI_ERSPAN_ENCAPSULATION_TYPE_MIRROR_L3_GRE_TUNNEL;
     attrs.push_back(attr);
 
     attr.id =SAI_MIRROR_SESSION_ATTR_IPHDR_VERSION;
@@ -451,7 +452,7 @@ bool MirrorOrch::activateSession(const string& name, MirrorEntry& session)
 
     session.status = true;
 
-    status = sai_mirror_api->create_mirror_session(&session.sessionId, attrs.size(), attrs.data());
+    status = sai_mirror_api->create_mirror_session(&session.sessionId, gSwitchId, attrs.size(), attrs.data());
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to activate mirroring session %s\n", name.c_str());
@@ -566,7 +567,7 @@ void MirrorOrch::updateNextHop(const NextHopUpdate& update)
             // and current next hop is still in next hop group - do nothing.
             if (session.nexthopInfo.prefix == update.prefix && update.nexthopGroup.getIpAddresses().count(session.nexthopInfo.nexthop))
             {
-                return;
+                continue;
             }
         }
 
@@ -582,26 +583,26 @@ void MirrorOrch::updateNextHop(const NextHopUpdate& update)
             {
                 deactivateSession(name, session);
             }
-            return;
+            continue;
         }
 
         if (session.status)
         {
             if (!updateSessionDstMac(name, session))
             {
-                return;
+                continue;
             }
 
             if (!updateSessionDstPort(name, session))
             {
-                return;
+                continue;
             }
         }
         else
         {
             if (!activateSession(name, session))
             {
-                return;
+                continue;
             }
         }
     }
@@ -638,19 +639,19 @@ void MirrorOrch::updateNeighbor(const NeighborUpdate& update)
                 {
                     deactivateSession(name, session);
                 }
-               return;
+               continue;
             }
 
             if (session.status)
             {
                 if (!updateSessionDstMac(name, session))
                 {
-                    return;
+                    continue;
                 }
 
                 if (!updateSessionDstPort(name, session))
                 {
-                    return;
+                    continue;
                 }
             }
             else
@@ -748,7 +749,7 @@ void MirrorOrch::updateLagMember(const LagMemberUpdate& update)
             // We interesting only in first LAG member
             if (update.lag.m_members.size() > 1)
             {
-                return;
+                continue;
             }
 
             const string& memberName = *update.lag.m_members.begin();
@@ -771,7 +772,7 @@ void MirrorOrch::updateLagMember(const LagMemberUpdate& update)
                 deactivateSession(name, session);
                 session.neighborInfo.portId = SAI_OBJECT_TYPE_NULL;
 
-                return;
+                continue;
             }
 
             // Get another LAG member and update session

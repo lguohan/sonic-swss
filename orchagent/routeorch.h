@@ -18,10 +18,14 @@ using namespace swss;
 /* Maximum next hop group number */
 #define NHGRP_MAX_SIZE 128
 
+/* NextHopGroupMember: next_hop_id, next_hop_group_member */
+typedef map<sai_object_id_t, sai_object_id_t> NextHopGroupMember;
+
 struct NextHopGroupEntry
 {
     sai_object_id_t     next_hop_group_id;  // next hop group id
     int                 ref_count;          // reference count
+    NextHopGroupMember  next_hop_group_members;
 };
 
 struct NextHopUpdate
@@ -59,6 +63,7 @@ private:
     NeighOrch *m_neighOrch;
 
     int m_nextHopGroupCount;
+    int m_maxNextHopGroupCount;
     bool m_resync;
 
     RouteTable m_syncdRoutes;
