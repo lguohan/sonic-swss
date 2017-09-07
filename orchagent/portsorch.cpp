@@ -330,6 +330,7 @@ bool PortsOrch::setHostIntfsOperStatus(sai_object_id_t port_id, bool up)
 {
     SWSS_LOG_ENTER();
 
+#if 0
     for (auto it = m_portList.begin(); it != m_portList.end(); it++)
     {
         if (it->second.m_port_id == port_id)
@@ -350,7 +351,9 @@ bool PortsOrch::setHostIntfsOperStatus(sai_object_id_t port_id, bool up)
             return true;
         }
     }
-    return false;
+#endif
+
+    return true;
 }
 
 void PortsOrch::updateDbPortOperStatus(sai_object_id_t id, sai_port_oper_status_t status)
