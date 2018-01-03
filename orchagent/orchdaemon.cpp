@@ -22,6 +22,8 @@ PortsOrch *gPortsOrch;
 FdbOrch *gFdbOrch;
 /*Global variable gAclOrch declared*/
 AclOrch *gAclOrch;
+/*Global variable gCrmOrch declared*/
+CrmOrch *gCrmOrch;
 
 OrchDaemon::OrchDaemon(DBConnector *applDb, DBConnector *configDb) :
         m_applDb(applDb),
@@ -57,6 +59,7 @@ bool OrchDaemon::init()
         APP_LAG_MEMBER_TABLE_NAME
     };
 
+    gCrmOrch = new CrmOrch(m_configDb, CFG_CRM_TABLE_NAME);
     gPortsOrch = new PortsOrch(m_applDb, ports_tables);
     gFdbOrch = new FdbOrch(m_applDb, APP_FDB_TABLE_NAME, gPortsOrch);
     IntfsOrch *intfs_orch = new IntfsOrch(m_applDb, APP_INTF_TABLE_NAME);
@@ -98,7 +101,7 @@ bool OrchDaemon::init()
     };
     gAclOrch = new AclOrch(m_configDb, acl_tables, gPortsOrch, mirror_orch, neigh_orch, route_orch);
 
-    m_orchList = { switch_orch, gPortsOrch, intfs_orch, neigh_orch, route_orch, copp_orch, tunnel_decap_orch, qos_orch, buffer_orch, mirror_orch, gAclOrch, gFdbOrch};
+    m_orchList = { switch_orch, gCrmOrch, gPortsOrch, intfs_orch, neigh_orch, route_orch, copp_orch, tunnel_decap_orch, qos_orch, buffer_orch, mirror_orch, gAclOrch, gFdbOrch};
     m_select = new Select();
 
     vector<string> pfc_wd_tables = {

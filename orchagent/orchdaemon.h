@@ -19,6 +19,7 @@
 #include "aclorch.h"
 #include "pfcwdorch.h"
 #include "switchorch.h"
+#include "crmorch.h"
 
 using namespace swss;
 
