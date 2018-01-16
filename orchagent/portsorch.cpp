@@ -469,7 +469,7 @@ bool PortsOrch::bindAclTable(sai_object_id_t id, sai_object_id_t table_oid, sai_
             port.m_egress_acl_table_group_id = groupOid;
         }
 
-        gCrmOrch->incCrmAclUsedCounter(CrmResourceType::CRM_ACL_GROUP, SAI_ACL_STAGE_INGRESS, SAI_ACL_BIND_POINT_TYPE_PORT);
+        gCrmOrch->incCrmAclUsedCounter(CrmResourceType::CRM_ACL_GROUP, (sai_acl_stage_t) group_attr.value.s32, SAI_ACL_BIND_POINT_TYPE_PORT);
 
         // Bind this ACL group to port OID
         sai_attribute_t port_attr;

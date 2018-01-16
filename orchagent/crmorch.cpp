@@ -7,7 +7,7 @@
 #define CRM_COUNTERS_TABLE_KEY "STATS"
 
 #define CRM_POLLING_INTERVAL_DEFAULT 5
-#define CRM_THRESHOLD_TYPE_DEFAULT CrmThresholdType::PERCENTAGE
+#define CRM_THRESHOLD_TYPE_DEFAULT CrmThresholdType::CRM_PERCENTAGE
 #define CRM_THRESHOLD_LOW_DEFAULT 70
 #define CRM_THRESHOLD_HIGH_DEFAULT 85
 #define CRM_EXCEEDED_MSG_MAX 10
@@ -107,9 +107,9 @@ const map<string, CrmResourceType> crmThreshHighResMap =
 
 const map<string, CrmThresholdType> crmThreshTypeMap =
 {
-    { "percentage", CrmThresholdType::PERCENTAGE },
-    { "used", CrmThresholdType::USED },
-    { "free", CrmThresholdType::FREE }
+    { "percentage", CrmThresholdType::CRM_PERCENTAGE },
+    { "used", CrmThresholdType::CRM_USED },
+    { "free", CrmThresholdType::CRM_FREE }
 };
 
 const map<string, CrmResourceType> crmAvailCntsTableMap =
@@ -156,7 +156,7 @@ CrmOrch::CrmOrch(DBConnector *db, string tableName):
     m_pollingInterval = chrono::minutes(CRM_POLLING_INTERVAL_DEFAULT);
 
     for (const auto &res : crmResTypeNameMap)
-	{
+    {
         m_resourcesMap.emplace(res.first, CrmResourceEntry(res.second, CRM_THRESHOLD_TYPE_DEFAULT, CRM_THRESHOLD_LOW_DEFAULT, CRM_THRESHOLD_HIGH_DEFAULT));
     }
 
@@ -169,7 +169,7 @@ CrmOrch::CrmResourceEntry::CrmResourceEntry(string name, CrmThresholdType thresh
     lowThreshold(lowThreshold),
     highThreshold(highThreshold)
 {
-    if ((thresholdType == CrmThresholdType::PERCENTAGE) && ((lowThreshold > 100) || (highThreshold > 100)))
+    if ((thresholdType == CrmThresholdType::CRM_PERCENTAGE) && ((lowThreshold > 100) || (highThreshold > 100)))
     {
         throw runtime_error("CRM percentage threshold value must be <= 100%%");
     }
@@ -196,7 +196,7 @@ void CrmOrch::doTask(Consumer &consumer)
 
         if (op == SET_COMMAND)
         {
-        	handleSetCommand(key, kfvFieldsValues(t));
+            handleSetCommand(key, kfvFieldsValues(t));
         }
         else if (op == DEL_COMMAND)
         {
@@ -214,7 +214,7 @@ void CrmOrch::doTask(Consumer &consumer)
 
 void CrmOrch::handleSetCommand(const string& key, const vector<FieldValueTuple>& data)
 {
-	SWSS_LOG_ENTER();
+    SWSS_LOG_ENTER();
 
     for (auto i : data)
     {
@@ -239,7 +239,7 @@ void CrmOrch::handleSetCommand(const string& key, const vector<FieldValueTuple>&
                 auto resourceType = crmThreshLowResMap.at(field);
                 auto thresholdValue = to_uint<uint32_t>(value);
 
-            	m_resourcesMap.at(resourceType).lowThreshold = thresholdValue;
+                m_resourcesMap.at(resourceType).lowThreshold = thresholdValue;
             }
             else if (crmThreshHighResMap.find(field) != crmThreshHighResMap.end())
             {
@@ -277,7 +277,7 @@ void CrmOrch::incCrmResUsedCounter(CrmResourceType resource)
     }
     catch (...)
     {
-    	SWSS_LOG_ERROR("Failed to increment \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the CRM resource.");
         return;
     }
 }
@@ -292,7 +292,7 @@ void CrmOrch::decCrmResUsedCounter(CrmResourceType resource)
     }
     catch (...)
     {
-    	SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the CRM resource.");
         return;
     }
 }
@@ -420,7 +420,20 @@ void CrmOrch::getResAvailableCounters()
             case SAI_SWITCH_ATTR_AVAILABLE_ACL_TABLE:
             case SAI_SWITCH_ATTR_AVAILABLE_ACL_TABLE_GROUP:
             {
+                attr.value.aclresource.count = 0;
+                attr.value.aclresource.list = NULL;
+
                 sai_status_t status = sai_switch_api->get_switch_attribute(gSwitchId, 1, &attr);
+                if ((status != SAI_STATUS_SUCCESS) && (status != SAI_STATUS_BUFFER_OVERFLOW))
+                {
+                    SWSS_LOG_ERROR("Failed to get switch attribute %u , rv:%d", attr.id, status);
+                    break;
+                }
+
+                vector<sai_acl_resource_t> resources(attr.value.aclresource.count);
+                attr.value.aclresource.list = resources.data();
+
+                status = sai_switch_api->get_switch_attribute(gSwitchId, 1, &attr);
                 if (status != SAI_STATUS_SUCCESS)
                 {
                     SWSS_LOG_ERROR("Failed to get switch attribute %u , rv:%d", attr.id, status);
@@ -504,15 +517,18 @@ void CrmOrch::checkCrmThresholds()
 
             switch (res.thresholdType)
             {
-                case CrmThresholdType::PERCENTAGE:
-                    utilization = (cnt.usedCounter * 100) / (cnt.usedCounter + cnt.availableCounter);
+                case CrmThresholdType::CRM_PERCENTAGE:
+                    if (cnt.usedCounter != 0)
+                    {
+                        utilization = (cnt.usedCounter * 100) / (cnt.usedCounter + cnt.availableCounter);
+                    }
                     threshType = "TH_PERCENTAGE";
                     break;
-                case CrmThresholdType::USED:
+                case CrmThresholdType::CRM_USED:
                     utilization = cnt.usedCounter;
                     threshType = "TH_USED";
                     break;
-                case CrmThresholdType::FREE:
+                case CrmThresholdType::CRM_FREE:
                     utilization = cnt.availableCounter;
                     threshType = "TH_FREE";
                     break;

@@ -63,7 +63,7 @@ bool NeighOrch::addNextHop(IpAddress ipAddress, string alias)
 
     m_intfsOrch->increaseRouterIntfsRefCount(alias);
 
-    if (next_hop_attr.value.ipaddr.addr_family == SAI_IP_ADDR_FAMILY_IPV4)
+    if (ipAddress.isV4())
     {
         gCrmOrch->incCrmResUsedCounter(CrmResourceType::CRM_IPV4_NEXTHOP);
     }
@@ -283,16 +283,16 @@ bool NeighOrch::addNeighbor(NeighborEntry neighborEntry, MacAddress macAddress)
             }
             m_intfsOrch->decreaseRouterIntfsRefCount(alias);
 
-            if (neighbor_entry.ip_address.addr_family == SAI_IP_ADDR_FAMILY_IPV4)
-            {
-                gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV4_NEIGHBOR);
-            }
-            else
-            {
-                gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV6_NEIGHBOR);
-            }
-
             return false;
+        }
+
+        if (neighbor_entry.ip_address.addr_family == SAI_IP_ADDR_FAMILY_IPV4)
+        {
+            gCrmOrch->incCrmResUsedCounter(CrmResourceType::CRM_IPV4_NEIGHBOR);
+        }
+        else
+        {
+            gCrmOrch->incCrmResUsedCounter(CrmResourceType::CRM_IPV6_NEIGHBOR);
         }
     }
     else
@@ -361,13 +361,16 @@ bool NeighOrch::removeNeighbor(NeighborEntry neighborEntry)
     SWSS_LOG_NOTICE("Removed next hop %s on %s",
                     ip_address.to_string().c_str(), alias.c_str());
 
-    if (neighbor_entry.ip_address.addr_family == SAI_IP_ADDR_FAMILY_IPV4)
+    if (status != SAI_STATUS_ITEM_NOT_FOUND)
     {
-        gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV4_NEXTHOP);
-    }
-    else
-    {
-        gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV6_NEXTHOP);
+        if (neighbor_entry.ip_address.addr_family == SAI_IP_ADDR_FAMILY_IPV4)
+        {
+            gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV4_NEXTHOP);
+        }
+        else
+        {
+            gCrmOrch->decCrmResUsedCounter(CrmResourceType::CRM_IPV6_NEXTHOP);
+        }
     }
 
     status = sai_neighbor_api->remove_neighbor_entry(&neighbor_entry);

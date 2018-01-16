@@ -10,8 +10,6 @@ extern "C" {
 #include "sai.h"
 }
 
-using namespace std;
-
 enum class CrmResourceType
 {
     CRM_IPV4_ROUTE,
@@ -31,9 +29,9 @@ enum class CrmResourceType
 
 enum class CrmThresholdType
 {
-    PERCENTAGE,
-    USED,
-    FREE,
+    CRM_PERCENTAGE,
+    CRM_USED,
+    CRM_FREE,
 };
 
 class CrmOrch : public Orch
@@ -42,9 +40,13 @@ public:
     CrmOrch(DBConnector *db, string tableName);
     void incCrmResUsedCounter(CrmResourceType resource);
     void decCrmResUsedCounter(CrmResourceType resource);
+    // Increment "used" counter for the ACL table/group CRM resources
     void incCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point);
+    // Decrement "used" counter for the ACL table/group CRM resources
     void decCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point);
+    // Increment "used" counter for the per ACL table CRM resources (ACL entry/counter)
     void incCrmAclTableUsedCounter(CrmResourceType resource, sai_object_id_t tableId);
+    // Decrement "used" counter for the per ACL table CRM resources (ACL entry/counter)
     void decCrmAclTableUsedCounter(CrmResourceType resource, sai_object_id_t tableId);
 
 private:
@@ -64,9 +66,9 @@ private:
 
         string name;
 
-        CrmThresholdType thresholdType = CrmThresholdType::PERCENTAGE;
-        uint32_t lowThreshold = 0;
-        uint32_t highThreshold = 0;
+        CrmThresholdType thresholdType = CrmThresholdType::CRM_PERCENTAGE;
+        uint32_t lowThreshold = 70;
+        uint32_t highThreshold = 85;
 
         map<string, CrmResourceCounter> countersMap;
 
