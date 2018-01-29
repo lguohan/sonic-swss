@@ -11,7 +11,6 @@
 #define CRM_THRESHOLD_LOW_DEFAULT 70
 #define CRM_THRESHOLD_HIGH_DEFAULT 85
 #define CRM_EXCEEDED_MSG_MAX 10
-#define CRM_CLEAR_MSG_MAX 1
 
 extern sai_object_id_t gSwitchId;
 extern sai_switch_api_t *sai_switch_api;
@@ -173,6 +172,12 @@ CrmOrch::CrmResourceEntry::CrmResourceEntry(string name, CrmThresholdType thresh
     {
         throw runtime_error("CRM percentage threshold value must be <= 100%%");
     }
+
+    if (!(lowThreshold < highThreshold))
+    {
+        throw runtime_error("CRM low threshold must be less then high threshold");
+    }
+
 }
 
 void CrmOrch::doTask(Consumer &consumer)
@@ -277,7 +282,7 @@ void CrmOrch::incCrmResUsedCounter(CrmResourceType resource)
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the %s CRM resource.", crmResTypeNameMap.at(resource).c_str());
         return;
     }
 }
@@ -292,7 +297,7 @@ void CrmOrch::decCrmResUsedCounter(CrmResourceType resource)
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the %s CRM resource.", crmResTypeNameMap.at(resource).c_str());
         return;
     }
 }
@@ -307,22 +312,39 @@ void CrmOrch::incCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t sta
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the %s CRM resource.", crmResTypeNameMap.at(resource).c_str());
         return;
     }
 }
 
-void CrmOrch::decCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point)
+void CrmOrch::decCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point, sai_object_id_t oid)
 {
     SWSS_LOG_ENTER();
 
     try
     {
         m_resourcesMap.at(resource).countersMap[getCrmAclKey(stage, point)].usedCounter--;
+
+        // Remove ACL table related counters 
+        if (resource == CrmResourceType::CRM_ACL_TABLE)
+        {
+            auto & cntMap = m_resourcesMap.at(CrmResourceType::CRM_ACL_TABLE).countersMap;
+            for (auto it = cntMap.begin(); it != cntMap.end();)
+            {
+                if (it->second.id == oid)
+                {
+                    it = cntMap.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the %s CRM resource.", crmResTypeNameMap.at(resource).c_str());
         return;
     }
 }
@@ -338,7 +360,7 @@ void CrmOrch::incCrmAclTableUsedCounter(CrmResourceType resource, sai_object_id_
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to increment \"used\" counter for the %s CRM resource (tableId:%lx).", crmResTypeNameMap.at(resource).c_str(), tableId);
         return;
     }
 }
@@ -353,7 +375,7 @@ void CrmOrch::decCrmAclTableUsedCounter(CrmResourceType resource, sai_object_id_
     }
     catch (...)
     {
-        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the CRM resource.");
+        SWSS_LOG_ERROR("Failed to decrement \"used\" counter for the %s CRM resource (tableId:%lx).", crmResTypeNameMap.at(resource).c_str(), tableId);
         return;
     }
 }
@@ -513,15 +535,18 @@ void CrmOrch::checkCrmThresholds()
         {
             auto &cnt = j.second;
             uint64_t utilization = 0;
+            uint32_t percentageUtil = 0;
             string threshType = "";
+
+            if (cnt.usedCounter != 0)
+            {
+                percentageUtil = (cnt.usedCounter * 100) / (cnt.usedCounter + cnt.availableCounter);
+            }
 
             switch (res.thresholdType)
             {
                 case CrmThresholdType::CRM_PERCENTAGE:
-                    if (cnt.usedCounter != 0)
-                    {
-                        utilization = (cnt.usedCounter * 100) / (cnt.usedCounter + cnt.availableCounter);
-                    }
+                    utilization = percentageUtil;
                     threshType = "TH_PERCENTAGE";
                     break;
                 case CrmThresholdType::CRM_USED:
@@ -538,25 +563,17 @@ void CrmOrch::checkCrmThresholds()
 
             if ((utilization >= res.highThreshold) && (res.exceededLogCounter < CRM_EXCEEDED_MSG_MAX))
             {
-                SWSS_LOG_WARN("%s THRESHOLD_EXCEEDED for %s %% Used count %u free count %u",
-                              res.name.c_str(), threshType.c_str(), cnt.usedCounter, cnt.availableCounter);
+                SWSS_LOG_WARN("%s THRESHOLD_EXCEEDED for %s %u%% Used count %u free count %u",
+                              res.name.c_str(), threshType.c_str(), percentageUtil, cnt.usedCounter, cnt.availableCounter);
 
                 res.exceededLogCounter++;
-                if (res.clearLogCounter > 0)
-                {
-                    res.clearLogCounter = 0;
-                }
             }
-            else if ((utilization <= res.lowThreshold) && (res.clearLogCounter < CRM_CLEAR_MSG_MAX) && (res.exceededLogCounter > 0))
+            else if ((utilization <= res.lowThreshold) && (res.exceededLogCounter > 0))
             {
-                SWSS_LOG_WARN("%s THRESHOLD_CLEAR for %s %% Used count %u free count %u",
-                              res.name.c_str(), threshType.c_str(), cnt.usedCounter, cnt.availableCounter);
+                SWSS_LOG_WARN("%s THRESHOLD_CLEAR for %s %u%% Used count %u free count %u",
+                              res.name.c_str(), threshType.c_str(), percentageUtil, cnt.usedCounter, cnt.availableCounter);
 
-                res.clearLogCounter++;
-                if (res.exceededLogCounter > 0)
-                {
-                    res.exceededLogCounter = 0;
-                }
+                res.exceededLogCounter = 0;
             }
         } // end of counters loop
     } // end of resources loop

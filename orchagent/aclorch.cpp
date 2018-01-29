@@ -1374,7 +1374,7 @@ bool AclOrch::removeAclTable(string table_id)
         m_AclTables.erase(table_oid);
 
         sai_acl_stage_t stage = (m_AclTables[table_oid].stage == ACL_STAGE_INGRESS) ? SAI_ACL_STAGE_INGRESS : SAI_ACL_STAGE_EGRESS;
-        gCrmOrch->decCrmAclUsedCounter(CrmResourceType::CRM_ACL_TABLE, stage, SAI_ACL_BIND_POINT_TYPE_PORT);
+        gCrmOrch->decCrmAclUsedCounter(CrmResourceType::CRM_ACL_TABLE, stage, SAI_ACL_BIND_POINT_TYPE_PORT, table_oid);
 
         return true;
     }

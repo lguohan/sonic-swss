@@ -43,7 +43,7 @@ public:
     // Increment "used" counter for the ACL table/group CRM resources
     void incCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point);
     // Decrement "used" counter for the ACL table/group CRM resources
-    void decCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point);
+    void decCrmAclUsedCounter(CrmResourceType resource, sai_acl_stage_t stage, sai_acl_bind_point_type_t point, sai_object_id_t oid);
     // Increment "used" counter for the per ACL table CRM resources (ACL entry/counter)
     void incCrmAclTableUsedCounter(CrmResourceType resource, sai_object_id_t tableId);
     // Decrement "used" counter for the per ACL table CRM resources (ACL entry/counter)
@@ -72,7 +72,6 @@ private:
 
         map<string, CrmResourceCounter> countersMap;
 
-        uint32_t clearLogCounter = 0;
         uint32_t exceededLogCounter = 0;
     };
 
